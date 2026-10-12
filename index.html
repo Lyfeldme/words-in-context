@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="auto">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Слова в контексте</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.0/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="header-top">
+        <h1><i class="ri-book-2-line"></i> Слова в контексте</h1>
+        <button class="btn icon-only" id="themeToggle" title="Переключить тему">
+          <i class="ri-sun-line"></i>
+        </button>
+      </div>
+      <p class="subtitle">Сохраняй слова разных языков с примерами</p>
+    </header>
+
+    <form id="wordForm" class="card" autocomplete="off">
+      <div class="row">
+        <div class="field">
+          <label for="language"><i class="ri-global-line"></i> Язык</label>
+          <div class="lang-picker">
+            <input type="text" id="language" placeholder="английский" autocomplete="off">
+            <button type="button" class="lang-picker-btn" id="openLangPicker"
+                    aria-label="Выбрать из списка языков" title="Выбрать из списка">
+              <i class="ri-list-check-2"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="word"><i class="ri-bookmark-line"></i> Слово / фраза</label>
+          <input type="text" id="word" placeholder="serendipity" required>
+        </div>
+
+        <div class="field">
+          <label for="translation"><i class="ri-translate-2"></i> Перевод</label>
+          <input type="text" id="translation" placeholder="счастливая случайность">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="tagsInput"><i class="ri-price-tag-3-line"></i> Теги</label>
+        <div class="tags-input-wrap" id="tagsInputWrap">
+          <div class="tags-chips" id="tagsChips"></div>
+          <input type="text" id="tagsInput" placeholder="Введите тег и нажмите Enter..." autocomplete="off">
+        </div>
+        <div class="tags-suggestions" id="tagsSuggestions" hidden></div>
+      </div>
+
+      <div class="field">
+        <label><i class="ri-chat-quote-line"></i> Контексты с переводом</label>
+        <div id="contextsContainer" class="contexts-container"></div>
+        <button type="button" class="btn small" id="addContextBtn">
+          <i class="ri-add-line"></i> Добавить контекст
+        </button>
+      </div>
+
+      <div class="field">
+        <label for="note"><i class="ri-lightbulb-line"></i> Заметка (необязательно)</label>
+        <input type="text" id="note" placeholder="откуда узнал, нюансы...">
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn primary" id="submitBtn">
+          <i class="ri-add-line"></i> <span id="submitBtnText">Добавить</span>
+        </button>
+        <button type="button" class="btn" id="cancelEdit" hidden>
+          <i class="ri-close-line"></i> Отмена
+        </button>
+      </div>
+    </form>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="ri-search-line search-icon"></i>
+        <input type="search" id="search" placeholder="Поиск по словам, переводам, контексту...">
+      </div>
+
+      <div class="dropdown" id="filterLangDropdown">
+        <button type="button" class="dropdown-trigger" aria-haspopup="listbox">
+          <span class="dropdown-label">
+            <i class="ri-filter-3-line"></i>
+            <span class="dropdown-text">Все языки</span>
+          </span>
+          <i class="ri-arrow-down-s-line dropdown-arrow"></i>
+        </button>
+        <ul class="dropdown-menu" role="listbox"></ul>
+      </div>
+
+      <div class="dropdown" id="filterTagDropdown">
+        <button type="button" class="dropdown-trigger" aria-haspopup="listbox">
+          <span class="dropdown-label">
+            <i class="ri-price-tag-3-line"></i>
+            <span class="dropdown-text">Все теги</span>
+          </span>
+          <i class="ri-arrow-down-s-line dropdown-arrow"></i>
+        </button>
+        <ul class="dropdown-menu" role="listbox"></ul>
+      </div>
+
+      <button class="btn" id="exportBtn" title="Скачать JSON">
+        <i class="ri-download-line"></i> <span>JSON</span>
+      </button>
+      <button class="btn" id="exportCsvBtn" title="Скачать CSV для Anki">
+        <i class="ri-file-text-line"></i> <span>CSV</span>
+      </button>
+      <button class="btn" id="exportPdfBtn" title="Скачать PDF">
+        <i class="ri-file-pdf-line"></i> <span>PDF</span>
+      </button>
+      <button class="btn" id="importBtn" title="Загрузить JSON">
+        <i class="ri-upload-line"></i> <span>Импорт</span>
+      </button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div id="wordList" class="word-list"></div>
+
+    <div id="empty" class="empty" hidden>
+      <i class="ri-seedling-line empty-icon"></i>
+      <p>Пока ничего не добавлено</p>
+      <p class="muted">Заполни форму выше, чтобы записать первое слово.</p>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="langModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="langModalTitle">
+      <div class="modal-header">
+        <h2 id="langModalTitle">
+          <i class="ri-global-line"></i>
+          Выберите язык
+        </h2>
+        <button type="button" class="modal-close" id="closeLangModal" aria-label="Закрыть">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+      <div class="modal-search">
+        <i class="ri-search-line"></i>
+        <input type="text" id="langModalSearch" placeholder="Найти язык..." autocomplete="off">
+      </div>
+      <ul class="modal-list" id="langModalList" role="listbox"></ul>
+      <div class="modal-footer">
+        <button type="button" class="btn" id="langModalCancel">
+          <i class="ri-close-line"></i> Закрыть
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="drop-zone" id="dropZone" hidden>
+    <div class="drop-zone-inner">
+      <i class="ri-download-2-line"></i>
+      <p>Отпустите файл для импорта</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
